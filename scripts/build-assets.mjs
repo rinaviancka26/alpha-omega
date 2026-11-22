@@ -194,6 +194,24 @@ const OFFICE_MAP = `/assets/office/office_full_map.png?v=${hash(fs.readFileSync(
 const iconSrc = fs.existsSync(path.join(RAW, 'icon.png')) ? path.join(RAW, 'icon.png') : path.join(RAW, card.team[0].name, 'portrait.png');
 await sharp(iconSrc).resize(128, 128).png().toFile(path.join(OUT, 'icon.png'));
 report.push(`web/public/assets/icon.png  128×128`);
+// Windows .ico for the desktop shortcut (PNG-in-ICO, sizes 16–256)
+{
+  const sizes = [16, 24, 32, 48, 64, 128, 256];
+  const pngs = await Promise.all(sizes.map((s) => sharp(iconSrc).resize(s, s, { kernel: KERNEL }).png().toBuffer()));
+  const header = Buffer.alloc(6 + 16 * sizes.length);
+  header.writeUInt16LE(0, 0); header.writeUInt16LE(1, 2); header.writeUInt16LE(sizes.length, 4);
+  let offset = header.length;
+  sizes.forEach((s, i) => {
+    const e = 6 + i * 16;
+    header.writeUInt8(s >= 256 ? 0 : s, e); header.writeUInt8(s >= 256 ? 0 : s, e + 1);
+    header.writeUInt8(0, e + 2); header.writeUInt8(0, e + 3); header.writeUInt16LE(1, e + 4); header.writeUInt16LE(32, e + 6);
+    header.writeUInt32LE(pngs[i].length, e + 8); header.writeUInt32LE(offset, e + 12);
+    offset += pngs[i].length;
+  });
+  fs.mkdirSync(path.join(ROOT, 'launcher'), { recursive: true });
+  fs.writeFileSync(path.join(ROOT, 'launcher', 'app.ico'), Buffer.concat([header, ...pngs]));
+  report.push(`launcher/app.ico  ${sizes.join('/')} px (from ${path.relative(ROOT, iconSrc)})`);
+}
 
 // ---------- 4. office coordinates → WORK_HOME (fails naming the room if too few seats) ----------
 const coordsFile = path.join(SRC, 'office-coordinates.json');

@@ -10,3 +10,4 @@ raw/
 *.tmp
 *.tsbuildinfo
 .satoru/hook-dedupe.json
+.satoru/run/
