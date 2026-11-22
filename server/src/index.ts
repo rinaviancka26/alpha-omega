@@ -4,6 +4,7 @@ import http from 'node:http';
 import { attachPty, inject, terminalStatus } from './pty.ts';
 import * as L from './lib.ts';
 import { mountDecisions } from './decisions.ts';
+import { mountProjects } from './projects.ts';
 
 export const PORT = Number(process.env.ALPHA_OMEGA_SERVER_PORT || 4317);
 export const WEB_ORIGIN = 'http://localhost:4316';
@@ -47,6 +48,7 @@ app.post('/api/active', wrap(async (req, res) => {
 app.get('/api/telemetry-status', wrap(async (_req, res) => { res.json(await L.telemetryStatus()); }));
 
 mountDecisions(app, wrap);
+mountProjects(app, wrap);
 
 // ---------- SSE ----------
 const clients = new Set<express.Response>();

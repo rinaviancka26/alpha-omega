@@ -287,3 +287,32 @@ page errors: none
 ```
 Notes: the real Claude CLI was not logged in inside the cloud build, so a **stub process named `claude`** (`scripts/proof/stub-claude/claude`, echoes stdin) ran in a PTY to prove detection + injection; with no Claude running the UI shows the quiet "no live terminal — tell rv yourself" notice.
 Screenshots: `step11-plan-conflict.png` (conflict, Approve disabled), `step11-plan-modal.png`, `step11-approved-pill.png` (read-only HUD pill, bar gone), `step11-approval-card.png`, `step11-stalled-blocked.png`.
+
+## Step 12 — Projects tab — **PASS** (Claude stood in by the stub process)
+
+`node scripts/proof/projects.mjs`:
+```
+Claude not live → Load disabled: true | New disabled: true | tooltip: Start Claude in the terminal first (Launch Claude) — rv needs to hear about the switch.
+stub claude live → Load enabled: true
+sweep overlay shown: 1
+toasts: Now working on Turbo Shop
+created folder: true | README: true | .git: true
+config.activeProject: turbo-shop | header: working on Turbo Shop
+duplicate → error toast: a project with slug "turbo-shop" is already registered
+direct POST duplicate → 409 | README untouched: true
+legacy row: legacy-shop legacy-shop● active /tmp/claude-0/aoroot/work/legacy-shop main dirty Loaded
+existing folder unmodified: true
+add missing folder → 400 {"error":"folder does not exist: /tmp/claude-0/aoroot/does-not-exist"}
+after Load garage — header: working on Garage Rebuild
+rows:
+  Garage Rebuild garage● active /tmp/claude-0/aoroot/work/garage no git — Loaded
+  Turbo Shop turbo-shop /tmp/claude-0/aoroot/projects-root/turbo-shop (no commits) dirty Load
+  legacy-shop legacy-shop /tmp/claude-0/aoroot/work/legacy-shop main dirty Load
+PTY (stub claude) received:
+  STUB CLAUDE GOT: ALPHA OMEGA: switch to project "Turbo Shop" at /tmp/claude-0/aoroot/projects-root/turbo-shop (slug turbo-shop). Put "🎬 @turbo-shop" on its own line in your reply, then read .satoru/projects/turbo-shop/ for its board.
+  STUB CLAUDE GOT: ALPHA OMEGA: switch to project "legacy-shop" at /tmp/claude-0/aoroot/work/legacy-shop (slug legacy-shop). Put "🎬 @legacy-shop" on its own line in your reply, then read .satoru/projects/legacy-shop/ for its board.
+  STUB CLAUDE GOT: ALPHA OMEGA: switch to project "Garage Rebuild" at /tmp/claude-0/aoroot/work/garage (slug garage). Put "🎬 @garage" on its own line in your reply, then read .satoru/projects/garage/ for its board.
+page errors: none
+```
+Screenshots: `step12-gated.png` (Load/New disabled + note), `step12-sweep.png` (lights-off sweep), `step12-new-project.png` ("Now working on Turbo Shop" toast), `step12-projects.png`.
+Projects-root default recorded in `docs/DECISIONS.md`.
