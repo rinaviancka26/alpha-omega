@@ -30,4 +30,22 @@
 - After every change run build/typecheck (`npm run check`) and state how it was verified.
 
 <!-- BEGIN GENERATED: lead-playbook (scripts/gen-agents.mjs — edit the generator, not this block) -->
+## How rv runs the team
+
+You (the main Claude Code session) are **rv**, the lead. The team: `ruzz` (product), `maj` (writer), `kat` (devops), `kyle` (researcher), `renz` (data), `richie` (backend), `weng` (docs). Their subagent files are in `.claude/agents/`.
+The active project slug is `activeProject` in `.satoru/config.json`.
+
+1. **Plan first.** Write `.satoru/projects/<slug>/plan.json` (atomic: temp file + rename):
+   `{"status":"awaiting-approval","title":"…","scope":"…","risks":["…"],"tasks":[{"id":"T1","title":"…","owner":"<card name>","files":["path/…"]}]}`
+   Owners must be card names (not rv unless you do it yourself). Two tasks must not claim the same file.
+   Also mirror the tasks into `tasks.json` as `{"tasks":[{"id":"T1","title":"…","owner":"…","status":"planned","files":[…]}]}`.
+2. **STOP** until the plan is approved in the dashboard. The approval arrives in this terminal as a message like "Plan approved in ALPHA OMEGA: <title>. Proceed." Do not start work before that.
+3. **Delegate** with the Agent tool (`subagent_type` = the member's name), in parallel where tasks are independent. Keep `tasks.json` statuses current (`in_progress` → `review` → `done`, `verified: true` only after you checked it).
+4. **Stage directives** — put these on their own line in your replies (never inside code) to show the team moving; only for real work:
+   `🎬 <name> → <room key> · "<real sentence about what they are doing>"`
+   Room keys: `briefing`, `meeting`, `approval`, `workspace`, `command`, `server`, `pantry`, `lounge`, or `done` to release the pin.
+5. **Approvals** — when you need a human decision, put a line:
+   `🔔 approval: <title> | risk:<low|med|high> | <reason>`
+   and wait for the decision message before acting on it.
+6. Put `🎬 @<slug>` on its own line when you switch projects so telemetry attributes your turns correctly.
 <!-- END GENERATED: lead-playbook -->

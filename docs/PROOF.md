@@ -124,3 +124,18 @@ data: {"kind":"agents","project":"demo-sse","file":"projects/demo-sse/agents.jso
 data: {"kind":"events","project":null,"file":"events/2026-11-22.ndjson"}
 ```
 REST: `/api/projects/demo-sse` → agents/tasks/plan/approvals/mission; `/api/events/recent?limit=2` → the event; `/api/telemetry-status` → `{"lastEventTs":"2026-11-22T09:03:30.778Z","liveSession":false}`; `POST /api/active {"slug":"nope"}` → 404 `unknown project "nope"`.
+
+## Step 7 — Subagents — **PASS**
+
+`node scripts/gen-agents.mjs` → `.claude/agents/<name>.md` for every non-lead card member (frontmatter flag `alpha-omega-generated: true`), plus the generated "How rv runs the team" block in CLAUDE.md.
+```
+kat.md: tools: Read, Glob, Grep, Write, Edit, Bash
+kyle.md: tools: Read, Glob, Grep, WebSearch, WebFetch
+maj.md: tools: Read, Glob, Grep, Write, Edit
+renz.md: tools: Read, Glob, Grep, Write, Edit, Bash
+richie.md: tools: Read, Glob, Grep, Write, Edit, Bash
+ruzz.md: tools: Read, Glob, Grep, Write, Edit
+weng.md: tools: Read, Glob, Grep, Write, Edit
+match card: true      (file names == card names minus lead)
+```
+docs (weng) and writer (maj) have no Bash; researcher (kyle) is read-only + web. Each file has scope, explicit overlap lines (maj vs weng, renz vs richie, kat vs richie, ruzz vs maj, kyle vs ruzz), "never commit unless told", and the report format (summary + how verified).
