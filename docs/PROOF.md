@@ -139,3 +139,35 @@ weng.md: tools: Read, Glob, Grep, Write, Edit
 match card: true      (file names == card names minus lead)
 ```
 docs (weng) and writer (maj) have no Bash; researcher (kyle) is read-only + web. Each file has scope, explicit overlap lines (maj vs weng, renz vs richie, kat vs richie, ruzz vs maj, kyle vs ruzz), "never commit unless told", and the report format (summary + how verified).
+
+## Step 8 — Telemetry hook — **PASS**
+
+`node --test tests/*.test.mjs` — fake payloads piped into `hooks/telemetry.mjs` against a temp `.satoru` (`ALPHA_OMEGA_SATORU`):
+```
+ok 1 - full scenario: spawn → phantom stop → real stop → Stop with directives
+ok 2 - attribution rules
+ok 3 - 🎬 @slug pins the session; never fails on garbage / missing .satoru
+ok 4 - reconcile: stale working → completed (keeps since), approval pin released, old directive cleared
+# pass 4  fail 0
+```
+agents.json after the scenario (ruzz = card member #2, rv = lead):
+```
+"ruzz": {"state":"completed","task":"Draft the requirements","say":"Requirements drafted in docs/req.md; verified by re-reading. torque-checked ✔",
+         "intendedRoom":"briefing","voice":"Walking the team through the spec", …}
+"rv":   {"state":"approval", …}
+```
+Event lines:
+```
+{"agent":"ruzz","type":"spawn","project":"demo","payload":{"task":"Draft the requirements","subagent":"ruzz","via":"cwd"}}
+{"agent":null,"type":"done","project":"demo","payload":{"phantom":true,"via":"cwd"}}                    ← phantom: no state change
+{"agent":"ruzz","type":"done","project":"demo","payload":{"say":"Requirements drafted in docs/req.md; …","task":"Draft the requirements","via":"cwd"}}  ← say from agent_transcript_path, not transcript_path
+{"agent":"rv","type":"idle","project":"demo","payload":{"directives":1,"approvals":1,"via":"cwd"}}       ← the 🎬 in a ``` block and the inline-code one were ignored
+{"agent":"ruzz","type":"stage","project":"demo","payload":{"room":"briefing","voice":"Walking the team through the spec"}}
+{"agent":"rv","type":"note","project":"demo","payload":{"text":"approval requested: Delete old migrations","approval":"A-fa74ae27"}}
+{"agent":"rv","type":"idle",…}                                                                           ← repeated Stop: no duplicate stage/approval
+```
+Attribution: `file_touch` outside a project → `project=null` (no activeProject fallback); `prompt` → `via: activeProject`; off-card `general-purpose` spawn → `agent=null, offCard`; secrets redacted (`sk-[REDACTED]`, `--password=[REDACTED]`).
+Reconcile notes: `ruzz had no heartbeat for >60 min and no live spawn — marked completed` (since kept), `approval pin released`, `stage directive (meeting) older than 2 h cleared`; a second reconcile writes nothing.
+
+**Real hooks, real session:** as soon as `.claude/settings.json` was written, the Claude Code session building this repo started firing it — `.satoru/events/2026-11-22.ndjson` received real `PostToolUse Bash` → `command` events, e.g.
+`{"agent":"rv","type":"command","project":null,"payload":{"command":"sed -i 's#node --test tests/#node --test tests/*.test.mjs#' package.json && …","via":null}}` (unattributed: no project registered, and command never falls back to activeProject).

@@ -9,3 +9,4 @@ raw/
 .satoru/spawn-queue.json
 *.tmp
 *.tsbuildinfo
+.satoru/hook-dedupe.json
