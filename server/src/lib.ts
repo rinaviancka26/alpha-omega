@@ -20,6 +20,7 @@ export type Approval = { id: string; title: string; risk: 'low' | 'med' | 'high'
 export type Config = { activeProject: string | null; projectsRoot?: string };
 export type Registry = { projects: { slug: string; name: string; path: string }[] };
 
+export const SATORU_DIR = SATORU;
 export const P = {
   config: () => path.join(SATORU, 'config.json'),
   registry: () => path.join(SATORU, 'registry.json'),

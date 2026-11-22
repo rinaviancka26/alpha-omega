@@ -263,3 +263,27 @@ banner: ALPHA OMEGA working on Garage Rebuild ○ Claude not running
 - kat's completion is 3 h old → settles straight in the Lounge on load (first sighting places characters without walking; no closing bubble since it is older than 5 min).
 - maj is *shown working* with heartbeat 32 min old → dimmed (opacity 0.45) with ⏱ 32m tag; completed/idle agents are never dimmed.
 Screenshots: `step10-no-project.png`, `step10-board.png`, `step10-plan-briefing.png`.
+
+## Step 11 — Approvals — **PASS** (terminal bridge proven with a stub `claude` process)
+
+`node scripts/proof/approvals.mjs`:
+```
+bar: Needs you (1) | Plan awaiting approval: Parts catalogue v1
+conflict shown: ⚠ File conflict — server/parts.ts is claimed by T1 and T2. Approve is disabled until the plan is fixed.
+Approve disabled: true
+direct POST approve → 409 {"error":"two tasks claim the same file","conflicts":[{"file":"server/parts.ts","tasks":["T1","T2"]}]}
+after fix — conflict shown: 0 | Approve disabled: false
+toast (no Claude live): no live terminal — tell rv yourself
+HUD pill: 📋 Parts catalogue v1 · approved | bar present: 0
+terminal-status: {"attached":true,"sessions":2,"claudeRunning":true}
+beeps when count grew: 1 | bar: Needs you (1) | Approval (high): Drop the legacy parts table
+toast (stub claude live): Sent to rv in the terminal.
+PTY received: STUB CLAUDE GOT: Approval A-1a2b3c4d approved in ALPHA OMEGA: Drop the legacy parts table. Note: backup first. Proceed.
+approvals.json: {"id":"A-1a2b3c4d","title":"Drop the legacy parts table","risk":"high","reason":"irreversible data change","status":"approved","created":"2026-11-22T09:27:15.911Z","agent":"rv","decidedAt":"2026-11-22T09:27:18.103Z","note":"backup first"}
+plan.json status: approved (decidedAt set)
+bar after all decided: renders nothing
+bar with stalled+blocked: Needs you (2) | Blocked: Parts schema (renz) | Stalled 35m: Catalogue API (richie)
+page errors: none
+```
+Notes: the real Claude CLI was not logged in inside the cloud build, so a **stub process named `claude`** (`scripts/proof/stub-claude/claude`, echoes stdin) ran in a PTY to prove detection + injection; with no Claude running the UI shows the quiet "no live terminal — tell rv yourself" notice.
+Screenshots: `step11-plan-conflict.png` (conflict, Approve disabled), `step11-plan-modal.png`, `step11-approved-pill.png` (read-only HUD pill, bar gone), `step11-approval-card.png`, `step11-stalled-blocked.png`.
