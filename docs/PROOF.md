@@ -100,3 +100,27 @@ inject: {"injected":true}
 pty output line: STUB CLAUDE GOT: Plan approved. Proceed.      (text, then Enter as a separate write 150 ms later)
 ```
 Windows: shell = `powershell.exe`; Claude detection uses `Get-CimInstance Win32_Process` — **UNVERIFIED ON WINDOWS**.
+
+## Step 6 — State layer — **PASS**
+
+Shared dependency-free I/O in `hooks/lib/io.mjs` (used by both the server and the telemetry hook): `readJson` (2 retries on torn reads, then fallback), atomic `writeJson` (temp + rename, UTF-8, redacted), `lockedUpdateJson` (`<file>.lock` opened `wx`, retry ~2 s, stale after 10 s), `appendEvent` → `events/<local date>.ndjson`.
+
+`npm --prefix server test`:
+```
+# in-process: final n=200, raw reads during run=8796, unparseable=0
+ok 1 - 200 concurrent lockedUpdateJson increments (in-process) → exactly 200, always parseable
+# cross-process: exit codes=0,0,0,0, final n=200, raw reads=19838, unparseable=0
+ok 2 - 4 processes × 50 increments (cross-process lock) → exactly 200, always parseable
+ok 3 - stale lock (>10 s old) is taken over
+ok 4 - fresh foreign lock → times out after ~2 s
+ok 5 - torn read → retries then fallback
+ok 6 - redaction
+# pass 6  fail 0
+```
+SSE (`curl -N /api/stream` through the Vite proxy while writing agents.json + appending an event):
+```
+data: {"kind":"hello","project":null,"file":""}
+data: {"kind":"agents","project":"demo-sse","file":"projects/demo-sse/agents.json"}
+data: {"kind":"events","project":null,"file":"events/2026-11-22.ndjson"}
+```
+REST: `/api/projects/demo-sse` → agents/tasks/plan/approvals/mission; `/api/events/recent?limit=2` → the event; `/api/telemetry-status` → `{"lastEventTs":"2026-11-22T09:03:30.778Z","liveSession":false}`; `POST /api/active {"slug":"nope"}` → 404 `unknown project "nope"`.
