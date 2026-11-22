@@ -213,3 +213,53 @@ ok 3 - negative control: a straight line workspace → approval office DOES hit 
 ```
 Facing: sampled the real on-screen position every 90 ms while walking; every `side` sample was mirrored exactly when moving right (0 wrong of 25+38 samples), `back` only when moving up, `front` when moving down.
 Root-caused flake during this step: an older `/api/state` response could land after a newer one and overwrite it → fixed with per-request sequence numbers (+10 s safety poll); 3/3 consecutive runs green afterwards. Also: `build-assets` no longer deletes the directory a running Vite watches and doesn't rewrite `officeAssets.ts` when unchanged.
+
+## Step 10 — Board-driven rooms — **PASS**
+
+Unit tests (`tsx --test tests/placement.test.ts`): precedence directive > approval > plan briefing > working > review > blocked > rest; expired directive ignored; lead never in a break room; stale working dimmed with age tag; completed never dimmed; no project → nobody works; no seat sharing — `# pass 3 fail 0`.
+
+`node scripts/proof/board.mjs` (hand-written state, real browser):
+```
+
+### No project loaded
+rv      → command   command_1    because: lead rests at own desk (no project loaded)
+ruzz    → pantry    pantry_3     because: no project loaded
+maj     → pantry    pantry_4     because: no project loaded
+kat     → lounge    lounge_2     because: no project loaded
+kyle    → lounge    lounge_3     because: no project loaded
+renz    → lounge    lounge_1     because: no project loaded
+richie  → pantry    pantry_2     because: no project loaded
+weng    → pantry    pantry_5     because: no project loaded
+badges on screen: none
+opacity: rv:1 ruzz:1 maj:1 kat:1 kyle:1 renz:1 richie:1 weng:1
+banner: ALPHA OMEGA no project loaded ○ Claude not running
+
+### Working / stale / blocked / review / pending approval / 3-hour-old completion
+rv      → approval  approval_1   [amber !] because: 1 pending approval(s)
+ruzz    → command   command_2    because: task T1 in progress
+maj     → workspace workspace_1  [dimmed 32m] because: task T2 in progress
+kat     → lounge    lounge_2     because: completed — on a break
+kyle    → lounge    lounge_3     because: idle — on a break
+renz    → meeting   meeting_1    [red !] because: task T3 blocked
+richie  → meeting   meeting_2    because: task T4 in review
+weng    → pantry    pantry_5     because: idle — on a break
+badges on screen: rv:amber, renz:red
+opacity: rv:1 ruzz:1 maj:0.45 kat:1 kyle:1 renz:1 richie:1 weng:1
+banner: ALPHA OMEGA working on Garage Rebuild ○ Claude not running
+
+### Plan awaiting approval
+rv      → command   command_1    because: lead rests at own desk
+ruzz    → briefing  briefing_1   because: plan "Parts catalogue v2" awaiting approval
+maj     → pantry    pantry_4     because: idle — on a break
+kat     → lounge    lounge_2     because: idle — on a break
+kyle    → lounge    lounge_3     because: idle — on a break
+renz    → lounge    lounge_1     because: idle — on a break
+richie  → briefing  briefing_2   because: plan "Parts catalogue v2" awaiting approval
+weng    → briefing  briefing_3   because: plan "Parts catalogue v2" awaiting approval
+badges on screen: none
+opacity: rv:1 ruzz:1 maj:1 kat:1 kyle:1 renz:1 richie:1 weng:1
+banner: ALPHA OMEGA working on Garage Rebuild ○ Claude not running
+```
+- kat's completion is 3 h old → settles straight in the Lounge on load (first sighting places characters without walking; no closing bubble since it is older than 5 min).
+- maj is *shown working* with heartbeat 32 min old → dimmed (opacity 0.45) with ⏱ 32m tag; completed/idle agents are never dimmed.
+Screenshots: `step10-no-project.png`, `step10-board.png`, `step10-plan-briefing.png`.

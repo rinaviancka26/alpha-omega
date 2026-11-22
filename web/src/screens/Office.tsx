@@ -69,6 +69,7 @@ export default function Office({ state, events }: { state: AppState | null; even
         </div>
         <div ref={wrapRef} className="flex-1 min-h-0 flex items-center justify-center">
           <div data-testid="stage" className="relative overflow-hidden rounded-lg border border-line" style={{ width: box.w, height: box.h }}>
+            {!project && <div data-testid="no-project-banner" className="absolute z-[900] left-1/2 -translate-x-1/2 top-2 px-3 py-1 rounded bg-black/80 border border-amber-500/50 text-amber-300 text-xs">No project loaded — load one in Projects. The team is on a break.</div>}
             {demo && <div className="absolute z-[900] left-1/2 -translate-x-1/2 top-2 px-3 py-1 rounded bg-amber-500 text-black text-xs font-black tracking-widest">DEMO — SIMULATED ACTIVITY, NOT REAL</div>}
             <div className="absolute inset-0" style={{ filter: lightsOn ? 'none' : 'brightness(0.28) saturate(0.4)', transition: 'filter 700ms ease' }}>
               <img src={OFFICE_MAP} alt="office" draggable={false} className="absolute inset-0 w-full h-full" style={{ imageRendering: PIXEL_ART ? 'pixelated' : 'auto' }} />
