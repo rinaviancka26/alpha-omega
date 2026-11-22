@@ -240,7 +240,7 @@ for (const [name, svg] of [['office.png', office()], ['icon.png', icon(lh)]]) {
 }
 const done = await Promise.all(jobs);
 // mirror into art/placeholder/ (committed copy)
-fs.rmSync(COPY, { recursive: true, force: true });
+if (!onlyMissing) fs.rmSync(COPY, { recursive: true, force: true });
 for (const f of done) {
   const dest = path.join(COPY, path.relative(RAW, f));
   fs.mkdirSync(path.dirname(dest), { recursive: true });
