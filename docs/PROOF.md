@@ -316,3 +316,35 @@ page errors: none
 ```
 Screenshots: `step12-gated.png` (Load/New disabled + note), `step12-sweep.png` (lights-off sweep), `step12-new-project.png` ("Now working on Turbo Shop" toast), `step12-projects.png`.
 Projects-root default recorded in `docs/DECISIONS.md`.
+
+## Step 13 — Tasks, Decisions, Brief, Timeline — **PASS**
+
+Server paging test (`npx tsx --test server/test/timeline.test.ts`):
+```
+# pages=3 sizes=25,25,10 | page1 last=#35 page2 first=#34 (identical ts) | cursor format e.g. 2026-11-22T00:30:29.000Z|2026-11-22.ndjson#30
+ok 1 - timeline paging over two days with identical timestamps on a page boundary
+```
+UI (`node scripts/proof/tabs.mjs`, 80 seeded events over two local days, the 50th/51st newest share a timestamp):
+```
+tasks[planned]: T1Parts schema db/parts.sql
+tasks[in_progress]: T2Catalogue API 5m ago
+tasks[review]: T3Catalogue copy
+tasks[blocked]: T4Search index waiting on SKU format
+tasks[done]: T5Dockerfile ✓ verified || T6API docs ⚠ unverified
+live: T7 appeared without reload: 1
+decisions order: A-00000002(pending) → plan → A-00000001
+brief phase (some not done): EXECUTING
+brief phase (all done, not all verified): VALIDATION
+brief phase (all done + verified): READY
+brief phase (no tasks): no chip
+timeline page 1: 50 entries; day groups: Sunday, Nov 22, 2026 / Saturday, Nov 21, 2026
+  last on page 1: 2026-11-21T15:29:00.000Z|2026-11-21.ndjson#31
+after Load older: 80 entries; first of page 2: 2026-11-21T15:29:00.000Z|2026-11-21.ndjson#30 | duplicates: 0 | Load older still shown: 0
+  same timestamp across the boundary: true
+filter project=unattributed: 20 entries (expected 20)
+filter type=command: 16 entries (expected 16)
+filter member=unattributed: 12 entries (expected 12)
+live event on top: 9:30:54 AM NOTE LIVE note arrives via SSE
+page errors: none
+```
+Cursor = `<ts>|<dayfile>#<line>`. Screenshots: `step13-tasks.png`, `step13-decisions.png`, `step13-brief.png`, `step13-timeline.png`.

@@ -11,6 +11,7 @@ export function useMissionControl() {
   const [connected, setConnected] = useState(false);
   const [lastChange, setLastChange] = useState<Change | null>(null);
   const [rev, setRev] = useState(0);
+  const [eventsRev, setEventsRev] = useState(0);
   const pending = useRef<{ state: boolean; events: boolean; t?: ReturnType<typeof setTimeout> }>({ state: false, events: false });
 
   const seq = useRef({ state: 0, events: 0 });
@@ -18,7 +19,7 @@ export function useMissionControl() {
     const jobs: Promise<unknown>[] = [];
     // sequence numbers: a slow, older response never overwrites a newer one
     if (what.state) { const n = ++seq.current.state; jobs.push(api<AppState>('/api/state').then((s) => { if (n === seq.current.state) setState(s); })); }
-    if (what.events) { const n = ++seq.current.events; jobs.push(api<{ events: SatoruEvent[] }>('/api/events/recent?limit=200').then((r) => { if (n === seq.current.events) setEvents(r.events); })); }
+    if (what.events) { const n = ++seq.current.events; jobs.push(api<{ events: SatoruEvent[] }>('/api/events/recent?limit=200').then((r) => { if (n === seq.current.events) { setEvents(r.events); setEventsRev((x) => x + 1); } })); }
     await Promise.all(jobs).catch(() => undefined);
     setRev((r) => r + 1);
   }, []);
@@ -43,5 +44,5 @@ export function useMissionControl() {
     return () => { es.close(); clearInterval(poll); };
   }, [refresh]);
 
-  return { state, events, connected, lastChange, refresh, rev };
+  return { state, events, connected, lastChange, refresh, rev, eventsRev };
 }

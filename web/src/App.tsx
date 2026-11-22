@@ -5,6 +5,10 @@ import { useTerminalStatus } from './hooks/useTerminalStatus';
 import { useMissionControl } from './hooks/useMissionControl';
 import Office from './screens/Office';
 import Projects from './screens/Projects';
+import Tasks from './screens/Tasks';
+import Decisions from './screens/Decisions';
+import Brief from './screens/Brief';
+import Timeline from './screens/Timeline';
 import { NeedsYouBar, PlanModal, ApprovalModal, decisionMessage, type NeedItem, type DecisionResult } from './components/Approvals';
 import Toasts, { type ToastMsg } from './components/Toast';
 
@@ -66,7 +70,10 @@ export default function App() {
         <main className="flex-1 overflow-auto p-3 min-h-0">
           {tab === 'Office' && <Office state={state} events={mc.events} />}
           {tab === 'Projects' && <Projects state={state} term={term} onSwitched={onSwitched} onError={(m) => toast('error', m)} />}
-          {!['Office', 'Projects'].includes(tab) && <div className="text-gray-500">{tab}</div>}
+          {tab === 'Tasks' && <Tasks state={state} />}
+          {tab === 'Decisions' && <Decisions state={state} onOpenPlan={() => setPlanOpen(plan?.status === 'awaiting-approval' ? 'edit' : 'read')} onDone={onDecision} />}
+          {tab === 'Brief' && <Brief state={state} />}
+          {tab === 'Timeline' && <Timeline state={state} eventsRev={mc.eventsRev} />}
         </main>
         <section className={`border-t border-line bg-panel ${dockOpen ? 'h-72' : 'h-9'} shrink-0 flex flex-col`}>
           <button onClick={() => setDockOpen(!dockOpen)} className="h-9 shrink-0 text-left px-4 text-xs text-gray-400 hover:text-white">
