@@ -1,0 +1,11 @@
+node_modules
+dist
+raw/
+.satoru/events/*.ndjson
+.satoru/projects/*/agents.json
+.satoru/projects/*/approvals.json
+*.lock
+.satoru/session-map.json
+.satoru/spawn-queue.json
+*.tmp
+*.tsbuildinfo
