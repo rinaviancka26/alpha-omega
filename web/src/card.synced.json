@@ -1,0 +1,77 @@
+{
+  "appName": "ALPHA OMEGA",
+  "theme": "MOTORSHOP",
+  "artStyle": "flat cartoon style — thick bold outlines, flat colours with one shadow tone, simple rounded shapes, playful proportions (not pixel art)",
+  "pixelArt": false,
+  "officeSetting": "modern tech office at night — charcoal floor tiles, dark walls, warm amber wall lamps, glowing blue monitors, a few green potted plants",
+  "uiAccent": "#8b5cf6",
+  "uiAccentName": "violet",
+  "team": [
+    {
+      "name": "rv",
+      "role": "lead",
+      "worksIn": "command",
+      "character": "CHEERFUL ROBOTIC MECHANIC",
+      "details": null
+    },
+    {
+      "name": "ruzz",
+      "role": "product",
+      "worksIn": "command",
+      "character": "CHEERFUL ROBOTIC MECHANIC",
+      "details": null
+    },
+    {
+      "name": "maj",
+      "role": "writer",
+      "worksIn": "workspace",
+      "character": "CHEERFUL ROBOTIC MECHANIC",
+      "details": null
+    },
+    {
+      "name": "kat",
+      "role": "devops",
+      "worksIn": "server",
+      "character": "CHEERFUL ROBOTIC MECHANIC",
+      "details": null
+    },
+    {
+      "name": "kyle",
+      "role": "researcher",
+      "worksIn": "workspace",
+      "character": "CHEERFUL ROBOTIC MECHANIC",
+      "details": null
+    },
+    {
+      "name": "renz",
+      "role": "data",
+      "worksIn": "server",
+      "character": "CHEERFUL ROBOTIC MECHANIC",
+      "details": null
+    },
+    {
+      "name": "richie",
+      "role": "backend",
+      "worksIn": "server",
+      "character": "CHEERFUL ROBOTIC MECHANIC",
+      "details": null
+    },
+    {
+      "name": "weng",
+      "role": "docs",
+      "worksIn": "workspace",
+      "character": "CHEERFUL ROBOTIC MECHANIC",
+      "details": null
+    }
+  ],
+  "rooms": {
+    "briefing": "Briefing Room",
+    "meeting": "Meeting Room",
+    "approval": "Approval Office",
+    "workspace": "Workspace",
+    "command": "Command Center",
+    "server": "Server Room",
+    "pantry": "Pantry",
+    "lounge": "Lounge"
+  }
+}

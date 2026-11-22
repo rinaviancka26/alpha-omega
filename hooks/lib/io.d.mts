@@ -1,0 +1,11 @@
+export const LOCK_TIMEOUT_MS: number;
+export const LOCK_STALE_MS: number;
+export const EVENT_TYPES: string[];
+export function redactString(s: string): string;
+export function redact<T>(v: T): T;
+export function readJson<T = any>(file: string, fallback?: T | null): Promise<T>;
+export function writeJson(file: string, data: unknown): Promise<void>;
+export function lockedUpdateJson<T = any>(file: string, fn: (cur: T) => T | undefined | Promise<T | undefined>, fallback?: T): Promise<T>;
+export function localDate(d?: Date): string;
+export type SatoruEvent = { ts: string; agent: string | null; type: string; project: string | null; payload: Record<string, unknown> };
+export function appendEvent(satoruDir: string, ev: Partial<SatoruEvent> & { type: string }): Promise<SatoruEvent>;
