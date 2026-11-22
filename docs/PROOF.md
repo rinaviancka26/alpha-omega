@@ -78,3 +78,25 @@ Screenshots: `docs/proof/step4-picker-editing.png`, `docs/proof/step4-seats-edge
 `web/src/office-coordinates.json` is produced by `scripts/make-coordinates.mjs` from the same geometry (`scripts/office-layout.mjs`) that draws the placeholder map: 8 rooms, 48 seats, 8 doors, 9 nodes, 16 edges.
 WORK_HOME (generated into `officeAssets.ts`): rv→command_1 (lead gets the first command seat), ruzz→command_2, maj→workspace_1, kat→server_1, kyle→workspace_2, renz→server_2, richie→server_3, weng→workspace_3.
 Too-few-seats check (server seats cut to 2): `✖ room "server" has 2 seat(s) but 3 member(s) work there …`, exit 1. Restored → build OK.
+
+## Step 5 — Embedded terminal — **PASS**
+
+`node scripts/proof/terminal.mjs` (Playwright, real browser, real PTY):
+```
+first connect: {"type":"hello","sid":"e32f…","reattached":true,"pid":2435}   (React StrictMode mounts twice in dev, so the 2nd mount already re-attaches)
+before reload contains hello: true | marker: marker-2435
+after reload: {"type":"hello","sid":"e32f…","reattached":true,"pid":2435}
+scrollback replayed (hello present): true | same shell pid: true | reattached: true
+same $$ after reload: still-2435 vs marker-2435
+page errors: none
+```
+Screenshots: `docs/proof/step5-terminal-before.png`, `docs/proof/step5-terminal-after-reload.png`.
+
+Injection (`node scripts/proof/inject.mjs`). No live Claude here, so a **stub process named `claude`** (`scripts/proof/stub-claude/claude`, echoes its stdin) was started inside a PTY to stand in for it:
+```
+no claude:  POST /api/terminal/inject → {"injected":false,"reason":"Claude is not running in the terminal"}
+status with stub running: {"attached":true,"sessions":2,"claudeRunning":true}
+inject: {"injected":true}
+pty output line: STUB CLAUDE GOT: Plan approved. Proceed.      (text, then Enter as a separate write 150 ms later)
+```
+Windows: shell = `powershell.exe`; Claude detection uses `Get-CimInstance Win32_Process` — **UNVERIFIED ON WINDOWS**.

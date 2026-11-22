@@ -1,0 +1,16 @@
+import { createRequire } from 'node:module';
+const WebSocket = createRequire(new URL('../../server/package.json', import.meta.url))('ws');
+const ws = new WebSocket('ws://localhost:4317/pty?sid=injtest');
+let out = '';
+ws.on('message', (m) => { const j = JSON.parse(m); if (j.data) out += j.data; });
+await new Promise((r) => ws.on('open', r));
+ws.send(JSON.stringify({ type: 'input', data: 'scripts/proof/stub-claude/claude\r' }));
+await new Promise((r) => setTimeout(r, 1500));
+const st = await (await fetch('http://localhost:4317/api/terminal-status')).json();
+console.log('status with stub running:', JSON.stringify(st));
+const inj = await (await fetch('http://localhost:4317/api/terminal/inject', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: 'Plan approved. Proceed.' }) })).json();
+console.log('inject:', JSON.stringify(inj));
+await new Promise((r) => setTimeout(r, 800));
+console.log('pty output line:', out.split(/\r?\n/).find((l) => l.startsWith('STUB CLAUDE GOT')));
+ws.send(JSON.stringify({ type: 'kill' }));
+await new Promise((r) => setTimeout(r, 300)); ws.close();

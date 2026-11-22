@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { CARD } from './card';
+import Terminal from './components/Terminal';
+import { useTerminalStatus } from './hooks/useTerminalStatus';
 
 const TABS = ['Office', 'Projects', 'Tasks', 'Decisions', 'Brief', 'Timeline'] as const;
 type Tab = (typeof TABS)[number];
@@ -7,6 +9,7 @@ type Tab = (typeof TABS)[number];
 export default function App() {
   const [tab, setTab] = useState<Tab>('Office');
   const [dockOpen, setDockOpen] = useState(true);
+  const term = useTerminalStatus();
   return (
     <div className="flex h-full">
       <aside className="w-44 shrink-0 border-r border-line bg-panel flex flex-col">
@@ -24,10 +27,11 @@ export default function App() {
           <span className="text-xs text-gray-500">HUD</span>
         </header>
         <main className="flex-1 overflow-auto p-4"><div className="text-gray-500">{tab}</div></main>
-        <section className={`border-t border-line bg-panel ${dockOpen ? 'h-64' : 'h-9'} shrink-0 flex flex-col`}>
+        <section className={`border-t border-line bg-panel ${dockOpen ? 'h-72' : 'h-9'} shrink-0 flex flex-col`}>
           <button onClick={() => setDockOpen(!dockOpen)} className="h-9 text-left px-4 text-xs text-gray-400 hover:text-white">
             {dockOpen ? '▾' : '▸'} Terminal
           </button>
+          <div className={dockOpen ? 'flex-1 min-h-0' : 'hidden'}><Terminal visible={dockOpen} status={term} /></div>
         </section>
       </div>
     </div>

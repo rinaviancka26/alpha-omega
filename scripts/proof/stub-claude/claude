@@ -1,0 +1,4 @@
+#!/bin/bash
+# STUB standing in for the Claude CLI (process name "claude") — used only to prove injection.
+echo "[stub claude ready]"
+while IFS= read -r line; do echo "STUB CLAUDE GOT: $line"; done
