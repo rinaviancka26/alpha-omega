@@ -11,7 +11,7 @@ export function sentence(e: SatoruEvent): string {
   switch (e.type) {
     case 'session_start': return `Claude session started — lights on`;
     case 'session_end': return `Claude session ended — lights off`;
-    case 'prompt': return `You asked ${who}: “${s(p.text, 60)}”`;
+    case 'prompt': return p.system ? `${who} received a subagent report` : `You asked ${who}: “${s(p.text, 60)}”`;
     case 'idle': return `${who} finished a turn${p.approvals ? ' and needs an approval' : ''}`;
     case 'spawn': return `${who} picked up: ${s(p.task, 60) || 'a task'}`;
     case 'done': return p.phantom ? `A subagent stopped (unknown, ignored)` : `${who} finished${p.say ? `: “${s(p.say, 60)}”` : ''}`;

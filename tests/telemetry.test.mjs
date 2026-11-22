@@ -131,3 +131,11 @@ test('reconcile: stale working → completed (keeps since), approval pin release
   run(env, 'session_start', { session_id: 'r2', cwd: env.proj, source: 'resume' });
   assert.equal(events(env).filter((e) => e.type === 'note').length, 3, 'second reconcile is a no-op');
 });
+
+test('<task-notification> prompts are system messages, not lead work', () => {
+  const env = setup();
+  run(env, 'prompt', { session_id: 'tn', cwd: env.proj, prompt: '<task-notification> <task-id>x</task-id> done' });
+  const e = events(env).at(-1);
+  assert.equal(e.payload.system, true);
+  assert.equal(fs.existsSync(path.join(env.sat, 'projects/demo/agents.json')), false, 'no lead state change');
+});

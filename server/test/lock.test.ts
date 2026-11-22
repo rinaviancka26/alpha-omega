@@ -77,4 +77,6 @@ test('redaction', () => {
   assert.match(redactString('password=hunter2'), /\[REDACTED\]/);
   assert.match(redactString('Bearer abcdefghijkl'), /Bearer \[REDACTED\]/);
   assert.equal(redactString('src/components/Office.tsx'), 'src/components/Office.tsx');
+  assert.equal(redactString('/tmp/claude-0/ao-projects/demo-garage/TAGLINE.md'), '/tmp/claude-0/ao-projects/demo-garage/TAGLINE.md');
+  assert.match(redactString('t QWxhZGRpbjpvcGVuIHNlc2FtZQQWxhZGRpbjpvcGVuIHNlc2FtZQ1234'), /REDACTED-B64/);
 });

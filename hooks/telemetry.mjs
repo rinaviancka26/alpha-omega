@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// ALPHA OMEGA telemetry hook — pure Node, cross-platform, no dependencies.
+// Telemetry hook (app name comes from mission.card.md) — pure Node, cross-platform, no dependencies.
 //   node "$CLAUDE_PROJECT_DIR/hooks/telemetry.mjs" <event>
 // Reads the Claude Code hook payload (JSON) from stdin and mirrors it into .satoru/.
 // NEVER fails the session: everything is wrapped, exit code is always 0, nothing goes to stdout.
@@ -201,6 +201,7 @@ async function main() {
       break;
     case 'prompt': {
       const text = short(p.prompt, 160);
+      if (/^\s*<task-notification>/.test(String(p.prompt || ''))) { ev('prompt', LEAD, { text: 'background task report', system: true, via }); break; } // not user work
       ev('prompt', LEAD, { text, via });
       if (project) await updAgents((A) => touch(A, LEAD, { state: A[LEAD]?.state === 'approval' ? 'approval' : 'working', task: short(p.prompt, 80), since: nowIso, say: null }));
       break;

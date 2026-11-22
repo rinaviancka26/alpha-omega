@@ -378,3 +378,164 @@ leftover dev processes: 0
 4317 closed
 ```
 Root-caused while proving: (1) the backgrounded `cd && setsid …` list ran in a subshell that kept the caller's stdout open (a piped `./start.sh | …` never finished) → whole list now redirected and `exec`'d; (2) `stop.sh` killed only the port listener, and `tsx watch` would respawn it → it now kills the listener's whole process group. Verified: a `tsx watch` started by hand is gone after `stop.sh` (0 leftover processes).
+
+## Step 15 — Verification pass + hardening — **PASS** (18/18 with a REAL Claude Code session)
+
+`node scripts/proof/e2e.mjs` drives the app in Chromium exactly as a user would, against the repo's real `.satoru` started with `./start.sh`:
+the real `claude` CLI (v2.1.330) is launched **inside the app's embedded terminal**, the project hooks in `.claude/settings.json` fire for real,
+the lead (main session) really writes the plan, the plan is approved via the Needs-You bar, the decision is typed into the live Claude,
+the real subagents `weng` and `maj` (from `.claude/agents/`) really write files, and their final messages become the closing bubbles.
+(Launched as `claude --permission-mode acceptEdits --allowedTools "Bash Read Write Edit Glob Grep Agent Task" --add-dir <projects root>` so no permission prompt blocks the unattended run;
+inherited session markers from the build session were unset so the nested Claude keeps its own transcript.)
+```
+[   3s] PASS fresh start: lights off 
+[   3s] PASS fresh start: "no project loaded" 
+[   6s] ✓ Claude detected in the terminal
+[   6s] ✓ lights on after a real SessionStart hook
+[   6s] PASS lights on from real session_start 
+[   9s] ✓ project created + active
+[  18s] ✓ lead pinned the session to the project (🎬 @demo-garage)
+[  31s] ✓ plan.json awaiting approval
+[  33s] PASS plan written by the real lead T1:weng, T2:maj
+[  33s] PASS Needs-You bar shows the plan 
+[  33s] PASS plan owners gather in the briefing room maj, weng
+[  34s] ✓ approval toast
+[  34s] PASS plan approval injected into the live Claude Sent to rv in the terminal.
+[  43s] ✓ real subagent spawn → member working
+[  47s] PASS working members at their desks weng:workspace:working
+[  47s] PASS ticker shows real events LIVE maj edited /tmp/claude-0/ao-projects/demo-garage/TAGLINE.md · just now weng edited /tmp/claude-0/ao-projects/demo-garage/docs/USAGE.… · just now maj picked
+[  52s] ✓ first real completion
+[  53s] ✓ closing bubble at the desk
+[  53s] PASS closing line shown (real say from the subagent transcript) … this is a standalone Markdown file in a separate project folder with no build, and my role doesn't run shell commands.
+[  53s] ✓ all delegated members completed
+[  62s] PASS after closing lines members walked to a break room weng:lounge
+[  64s] ✓ 🔔 approval parsed from the lead’s message
+[  66s] PASS lead goes to the approval office with "!" 
+[  67s] PASS reload keeps the SAME terminal session pid 15856 → 15856, reattached=true
+[  67s] PASS no goodbye replay after reload closing placements=0, bubbles=[], walking=[rv]
+[  68s] ✓ approval decision toast
+[  68s] PASS 🔔 approval decided in the UI and injected A-7c928dab
+[  70s] PASS Needs-You bar empty afterwards 
+[  76s] ✓ lead finished acknowledging (idle)
+[  76s] PASS subagents really wrote the files docs/USAGE.md:exists, TAGLINE.md:exists
+[  78s] ✓ lights off after real SessionEnd
+[  78s] PASS session end → lights off 
+
+RESULTS
+PASS  fresh start: lights off
+PASS  fresh start: "no project loaded"
+PASS  lights on from real session_start
+PASS  plan written by the real lead  — T1:weng, T2:maj
+PASS  Needs-You bar shows the plan
+PASS  plan owners gather in the briefing room  — maj, weng
+PASS  plan approval injected into the live Claude  — Sent to rv in the terminal.
+PASS  working members at their desks  — weng:workspace:working
+PASS  ticker shows real events  — LIVE maj edited /tmp/claude-0/ao-projects/demo-garage/TAGLINE.md · just now weng edited /tmp/claude-0/ao-projects/demo-garage/docs/USAGE.… · just now maj picked
+PASS  closing line shown (real say from the subagent transcript)  — … this is a standalone Markdown file in a separate project folder with no build, and my role doesn't run shell commands.
+PASS  after closing lines members walked to a break room  — weng:lounge
+PASS  lead goes to the approval office with "!"
+PASS  reload keeps the SAME terminal session  — pid 15856 → 15856, reattached=true
+PASS  no goodbye replay after reload  — closing placements=0, bubbles=[], walking=[rv]
+PASS  🔔 approval decided in the UI and injected  — A-7c928dab
+PASS  Needs-You bar empty afterwards
+PASS  subagents really wrote the files  — docs/USAGE.md:exists, TAGLINE.md:exists
+PASS  session end → lights off
+page errors: none
+exit=0
+```
+Screenshots `docs/proof/step15-01-fresh.png` … `step15-11-session-end.png` (lights off → on, new project, plan awaiting + modal, members at desks, closing line at the desk, break room, 🔔 approval in the Approval Office, after reload, session end → lights off).
+
+### Failures found while driving the app, root-caused, fixed, re-verified
+| Symptom | Root cause | Fix |
+|---|---|---|
+| Terminal pid changed after reload; Claude gone | the daemon ran under `tsx watch`; editing a server-imported file restarted it and killed every PTY | launchers start the server with `npm start` (no watching); `dev` script kept for development |
+| Member stayed at the desk forever after finishing | the 2.4 s closing timer was cleared by the effect cleanup whenever any other SSE update arrived inside those 2.4 s | closing release is driven by an interval tied to the closing set, not to project updates |
+| Closing line never shown for a 6-second job | the member finished while still walking to the desk; bubbles hide while walking and the window had already expired | the window starts when the member has settled at the desk |
+| Member stayed at the desk although the subagent had finished | lead had not yet flipped the task from `in_progress` | a completion newer than the task's last update counts as finished |
+| Lead shown "working" on `<task-notification>…` | background-agent reports arrive as UserPromptSubmit | logged as a system prompt, no state change |
+| A long file path in the ticker became `[REDACTED-B64]` | base64 redaction pattern allowed `/` | `/` and `.` excluded from the token class (test added) |
+| Claude stopped at a Bash permission prompt (first attempt) | expected interactive behaviour | unattended run pre-allows tools; a real user simply answers the prompt |
+| Real phantom `SubagentStop` events (empty agent_type) arrived 3× per run | Claude Code behaviour | already handled: ticker-only, `payload.phantom=true`, no state change |
+
+### Known-pitfall checklist
+- Hooks registered with the full `$CLAUDE_PROJECT_DIR` path — all 8 entries are `node "$CLAUDE_PROJECT_DIR/hooks/telemetry.mjs" <event>`. ✔
+- Phantom SubagentStop → ticker-only (seen live in this run). ✔
+- Subagent file names match the card exactly (`match card: true`, step 7; re-checked by sync in step 16). ✔
+- Refresh never kills the PTY (same pid after reload, step 5 + step 15). ✔
+- No replay of old completions after reload (step 15 check; seen-completions persisted per browser). ✔
+- All `.satoru` writers use lock + temp + rename (`grep` of server/hooks: the only raw writes are inside `hooks/lib/io.mjs` and the README of a *new* project folder); watcher uses `awaitWriteFinish {stabilityThreshold:120, pollInterval:25}`. ✔
+- Hook writes explicit UTF-8 (`{ encoding: 'utf8' }` on writeFile/appendFile; stdin decoded as UTF-8). ✔
+- One scale per character + shared baseline (step 3). ✔  · Legs never cut walls (2256 routes, step 9). ✔
+- Reconcile pass (step 8 test). ✔  · Dim only stale *working* agents (step 10). ✔
+- Nothing from the card hardcoded: grep for member names, room labels, app name, accent, theme and character outside the card and generated files (card JSON, officeAssets.ts, `.claude/agents`, CLAUDE.md playbook block) and docs → only two geometry comments in `scripts/office-layout.mjs` (room keys of the placeholder map) and runtime data in `.satoru`. Fixed during this pass: terminal selection colour, hook header comment, agent personality text (now from the card's character + theme), e2e prompt (now picks members by role). ✔
+- node-pty on Windows: node-pty 1.1.0 ships `prebuilds/win32-x64` for Node 22 LTS; README says to install Node LTS 22.x. ✔ (not executed on Windows)
+
+Full suite after the fixes: `npm test` → server 7/7, hook 5/5, routes+placement 6/6; `npm run check` (card + both typechecks) OK; `vite build` OK.
+
+## Step 16 — Card-change workflow — **PASS**
+
+`npm run card:sync` (`scripts/sync-card.mjs`) run in a temp copy of the repo (`/tmp/claude-0/cardtest`, real raw art + assets), then restored:
+```
+$ (rename weng → wendy in mission.card.md) && npm run card:sync
+✓ card: ALPHA OMEGA · 8 members · lead rv
+  added: — · removed: — · renamed: weng→wendy
+  raw/weng/ → raw/wendy/ (art kept for the renamed member)
+✓ assets rebuilt; WORK_HOME: rv→command_1 ruzz→command_2 maj→workspace_1 kat→server_1 kyle→workspace_2 renz→server_2 richie→server_3 wendy→workspace_3
+  deleted .claude/agents/weng.md (generated, no longer on the card as a subagent)
+✓ agents: ruzz.md, maj.md, kat.md, kyle.md, renz.md, richie.md, wendy.md · CLAUDE.md lead playbook updated
+
+Art checklist:
+  OFFICE MAP: no change needed
+  all member art present and up to date
+
+agents dir: kat.md kyle.md maj.md renz.md richie.md ruzz.md wendy.md 
+asset folders: kat kyle maj renz richie ruzz rv wendy 
+raw folders: raw/kat/ raw/kyle/ raw/maj/ raw/renz/ raw/richie/ raw/ruzz/ raw/rv/ raw/wendy/ 
+sprites in officeAssets.ts for wendy: 8
+
+$ (kat: character → GRUMPY ROBOTIC WELDER; richie replaced by zed/qa) && npm run card:sync
+✓ card: ALPHA OMEGA · 8 members · lead rv
+  added: zed · removed: richie · renamed: —
+[31m✖ asset pipeline: 4 raw file(s) missing:[0m
+  - raw/zed/front.png
+  - raw/zed/side.png
+  - raw/zed/back.png
+  - raw/zed/portrait.png
+Add them (or run `npm run placeholder-art -- --missing-only`) and re-run `npm run assets`.
+✖ assets NOT rebuilt (see above) — fix, then run `npm run card:sync` again
+  deleted .claude/agents/richie.md (generated, no longer on the card as a subagent)
+✓ agents: ruzz.md, maj.md, kat.md, kyle.md, renz.md, zed.md, wendy.md · CLAUDE.md lead playbook updated
+
+Art checklist:
+  REMAKE    raw/kat/front.png  — character/details changed ("CHEERFUL ROBOTIC MECHANIC" → "GRUMPY ROBOTIC WELDER")
+  REMAKE    raw/kat/side.png  — character/details changed ("CHEERFUL ROBOTIC MECHANIC" → "GRUMPY ROBOTIC WELDER")
+  REMAKE    raw/kat/back.png  — character/details changed ("CHEERFUL ROBOTIC MECHANIC" → "GRUMPY ROBOTIC WELDER")
+  REMAKE    raw/kat/portrait.png  — character/details changed ("CHEERFUL ROBOTIC MECHANIC" → "GRUMPY ROBOTIC WELDER")
+  MISSING   raw/zed/front.png
+  MISSING   raw/zed/side.png
+  MISSING   raw/zed/back.png
+  MISSING   raw/zed/portrait.png
+  OFFICE MAP: no change needed
+exit=1
+
+$ (restore the original card) && npm run card:sync
+✓ card: ALPHA OMEGA · 8 members · lead rv
+  added: — · removed: — · renamed: wendy→weng
+  raw/wendy/ → raw/weng/ (art kept for the renamed member)
+✓ assets rebuilt; WORK_HOME: rv→command_1 ruzz→command_2 maj→workspace_1 kat→server_1 kyle→workspace_2 renz→server_2 richie→server_3 weng→workspace_3
+  deleted .claude/agents/wendy.md (generated, no longer on the card as a subagent)
+  deleted .claude/agents/zed.md (generated, no longer on the card as a subagent)
+✓ agents: ruzz.md, maj.md, kat.md, kyle.md, renz.md, richie.md, weng.md · CLAUDE.md lead playbook updated
+
+Art checklist:
+  OFFICE MAP: no change needed
+  all member art present and up to date
+```
+Restore check after the last sync (md5 of the card, generated JSON, `officeAssets.ts`, every agent file, CLAUDE.md, all of `web/public/assets/` and `raw/`):
+```
+card, generated JSON, officeAssets.ts, agents, CLAUDE.md: identical to before
+all assets + raw art identical to before
+```
+Only files carrying `alpha-omega-generated: true` are ever deleted; hand-written agent files are reported and left alone.
+Baseline for diffs is `web/src/card.synced.json` (written only after a successful sync), because `card.mjs` rewrites `card.generated.json` on every dev start.
+Bugs found by this proof and fixed: diff baseline lost after a failed sync; `make-placeholder-art --missing-only` wiped the committed `art/placeholder/` copy.

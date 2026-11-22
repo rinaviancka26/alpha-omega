@@ -10,15 +10,16 @@ node "$ROOT/scripts/card.mjs"
 for d in "$ROOT" "$ROOT/server" "$ROOT/web"; do
   [ -d "$d/node_modules" ] || { echo "Installing dependencies in $d …"; (cd "$d" && npm install); }
 done
-start_half() { # name dir port
+start_half() { # name dir port npm-script
   if up "$3"; then echo "$1 already running on port $3 — leaving it alone."; return; fi
   echo "Starting $1 on port $3 …"
   # own session/process group (pgid = pid written to the pid file) so stop.sh can kill the whole tree;
   # all fds redirected so nothing keeps this script's stdout open.
-  (cd "$2" && exec setsid bash -c 'echo $$ > "$1"; exec npm run dev' _ "$RUN/$1.pid") > "$RUN/$1.log" 2>&1 < /dev/null &
+  (cd "$2" && exec setsid bash -c 'echo $$ > "$1"; exec npm run "$2"' _ "$RUN/$1.pid" "$4") > "$RUN/$1.log" 2>&1 < /dev/null &
 }
-start_half server "$ROOT/server" 4317
-start_half web "$ROOT/web" 4316
+# server: `npm start` (no file watching) so a code change never restarts the daemon and kills the terminal sessions
+start_half server "$ROOT/server" 4317 start
+start_half web "$ROOT/web" 4316 dev
 for i in $(seq 1 180); do up 4316 && up 4317 && break; sleep 0.5; done
 if up 4316 && up 4317; then
   echo "up: http://localhost:4316"

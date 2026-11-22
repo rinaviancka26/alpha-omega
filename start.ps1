@@ -39,16 +39,17 @@ foreach ($dir in @($Root, (Join-Path $Root 'server'), (Join-Path $Root 'web'))) 
     }
 }
 
-function Start-Half([string]$Name, [string]$Dir, [int]$Port) {
+function Start-Half([string]$Name, [string]$Dir, [int]$Port, [string]$Script) {
     if (Test-Port $Port) { Write-Host "$Name already running on port $Port - leaving it alone." -ForegroundColor Green; return }
     Write-Host "Starting $Name on port $Port ..." -ForegroundColor Cyan
     $title = "$AppName $Name ($Port)"
-    $cmd = "`$Host.UI.RawUI.WindowTitle = '$title'; Set-Location -LiteralPath '$Dir'; & '$npmPath' run dev"
+    $cmd = "`$Host.UI.RawUI.WindowTitle = '$title'; Set-Location -LiteralPath '$Dir'; & '$npmPath' run $Script"
     Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoExit', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', $cmd) -WorkingDirectory $Dir | Out-Null
 }
 
-Start-Half 'server' (Join-Path $Root 'server') $ServerPort
-Start-Half 'web' (Join-Path $Root 'web') $WebPort
+# server uses 'npm start' (no file watching): a code change never restarts the daemon and kills the terminal sessions
+Start-Half 'server' (Join-Path $Root 'server') $ServerPort 'start'
+Start-Half 'web' (Join-Path $Root 'web') $WebPort 'dev'
 
 $deadline = (Get-Date).AddSeconds(90)
 while (-not ((Test-Port $WebPort) -and (Test-Port $ServerPort))) {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CARD, LEAD, type Member } from '../card';
-import { OFFICE_MAP, MAP_W, MAP_H, PIXEL_ART, SPRITES, ROOM_REGIONS } from '../officeAssets';
+import { OFFICE_MAP, MAP_W, MAP_H, PIXEL_ART, SPRITES, ROOM_REGIONS, WORK_HOME } from '../officeAssets';
 import { useFitBox } from '../hooks/useFitBox';
 import { useWalkers } from '../hooks/useWalkers';
 import { useDemo } from '../hooks/useDemo';
@@ -28,6 +28,7 @@ export default function Office({ state, events }: { state: AppState | null; even
   // closing lines: a fresh completion shows its bubble at the desk for ~2.4 s, then walks to a break room — once (no replay on reload)
   const [closing, setClosing] = useState<Set<string>>(new Set());
   const seen = useRef(loadSeen());
+  const walkersRef = useRef<Record<string, { moving: boolean; seatId: string }>>({});
   useEffect(() => {
     if (!project) return;
     const add: string[] = [];
@@ -41,13 +42,32 @@ export default function Office({ state, events }: { state: AppState | null; even
     if (!add.length) return;
     saveSeen(seen.current);
     setClosing((c) => new Set([...c, ...add]));
-    const t = setTimeout(() => setClosing((c) => { const n = new Set(c); add.forEach((x) => n.delete(x)); return n; }), 2400);
-    return () => clearTimeout(t);
   }, [project]);
+  // The closing line stays ~2.4 s AFTER the member has settled at the desk (they may still be walking there when the
+  // job finishes). Driven by an interval, not by the `project` effect, so an SSE update can never strand anyone.
+  const settledAt = useRef<Record<string, number>>({});
+  useEffect(() => {
+    if (!closing.size) return;
+    const id = setInterval(() => {
+      const done: string[] = [];
+      const now = Date.now();
+      for (const name of closing) {
+        const w = walkersRef.current[name];
+        const home = WORK_HOME[name];
+        const atDesk = !!w && !w.moving && w.seatId === home?.seat;
+        if (!atDesk) { delete settledAt.current[name]; continue; }
+        settledAt.current[name] ??= now;
+        if (now - settledAt.current[name] >= 2400) done.push(name);
+      }
+      if (done.length) { done.forEach((n) => delete settledAt.current[n]); setClosing((c) => { const n = new Set(c); done.forEach((x) => n.delete(x)); return n; }); }
+    }, 200);
+    return () => clearInterval(id);
+  }, [closing]);
 
   const placements = useMemo(() => computePlacements(CARD.team, project, now, { closing, rooms: ROOM_KEYS }), [project, now, closing]);
   const targets = useMemo(() => Object.fromEntries(placements.map((p) => [p.name, p.seat])), [placements]);
   const walkers = useWalkers(targets);
+  walkersRef.current = walkers;
   const [wrapRef, box] = useFitBox<HTMLDivElement>(MAP_W / MAP_H);
   const scale = Math.min(1.15, Math.max(0.55, box.w / 1100));
   const charH = 88 * scale;

@@ -24,7 +24,7 @@ export default function Terminal({ visible, status }: { visible: boolean; status
 
   useEffect(() => {
     const term = new XTerm({ fontFamily: 'Cascadia Mono, Consolas, DejaVu Sans Mono, monospace', fontSize: 13, cursorBlink: true, scrollback: 5000,
-      theme: { background: '#0b0d12', foreground: '#e5e7eb', cursor: CARD.uiAccent, selectionBackground: '#8b5cf655' } });
+      theme: { background: '#0b0d12', foreground: '#e5e7eb', cursor: CARD.uiAccent, selectionBackground: CARD.uiAccent + '55' } });
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(host.current!);

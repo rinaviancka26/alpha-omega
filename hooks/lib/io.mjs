@@ -19,7 +19,8 @@ const PATTERNS = [
   [/(Bearer\s+)[A-Za-z0-9._~+/=-]{8,}/gi, '$1[REDACTED]'],
   [/((?:password|passwd|pwd|secret|token|api[_-]?key)\s*[=:]\s*)("[^"]*"|'[^']*'|[^\s&"',;]+)/gi, '$1[REDACTED]'],
   [/\b[0-9a-fA-F]{32,}\b/g, '[REDACTED-HEX]'],
-  [/(?<![A-Za-z0-9+/=_-])(?=[A-Za-z0-9+/_-]*[0-9])(?=[A-Za-z0-9+/_-]*[A-Z])(?=[A-Za-z0-9+/_-]*[a-z])[A-Za-z0-9+/_-]{40,}={0,2}(?![A-Za-z0-9+/=_-])/g, '[REDACTED-B64]'],
+  // long base64/base64url-looking tokens (mixed case + digit, 40+ chars). '/' and '.' are NOT part of the class so file paths survive.
+  [/(?<![A-Za-z0-9+=_.\/-])(?=[A-Za-z0-9+_-]*[0-9])(?=[A-Za-z0-9+_-]*[A-Z])(?=[A-Za-z0-9+_-]*[a-z])[A-Za-z0-9+_-]{40,}={0,2}(?![A-Za-z0-9+=_\/-])/g, '[REDACTED-B64]'],
 ];
 export function redactString(s) {
   let out = s;

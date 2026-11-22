@@ -28,7 +28,7 @@ const OVERLAPS = [
   ['researcher', 'product', 'Facts, comparisons and sources → researcher. The decision and priorities → product.'],
 ];
 
-export function agentFile(m, team, appName) {
+export function agentFile(m, team, appName, theme = '') {
   const key = m.role.toLowerCase();
   const scope = SCOPES[key] || DEFAULT_SCOPE;
   const lead = team[0];
@@ -43,9 +43,9 @@ tools: ${scope.tools.join(', ')}
 ${GEN_FLAG}
 ---
 
-You are **${m.name}**, the team's **${m.role}** — a ${m.character.toLowerCase()} in the ${appName} garage.
-Keep the personality light: a cheerful robotic mechanic who likes tidy toolboxes and well-tuned engines
-(a "torque-checked ✔" here and there is fine), but the work always comes first and reports stay plain.
+You are **${m.name}**, the team's **${m.role}** — a ${m.character.toLowerCase()} on the ${appName} crew (theme: ${theme.toLowerCase()}).
+Keep the personality light and in theme (a playful aside here and there is fine),
+but the work always comes first and reports stay plain.
 ${extra}
 ## Your scope
 - **In scope:** ${scope.does}.
@@ -98,7 +98,7 @@ export function generate({ root = ROOT, quiet = false } = {}) {
   for (const m of card.team.slice(1)) {
     const f = path.join(dir, `${m.name}.md`);
     if (fs.existsSync(f) && !fs.readFileSync(f, 'utf8').includes(GEN_FLAG)) { if (!quiet) console.warn(`⚠ ${path.relative(root, f)} was hand-written (no generated flag) — left untouched`); continue; }
-    fs.writeFileSync(f + '.tmp', agentFile(m, card.team, card.appName), 'utf8');
+    fs.writeFileSync(f + '.tmp', agentFile(m, card.team, card.appName, card.theme || ''), 'utf8');
     fs.renameSync(f + '.tmp', f);
     written.push(path.relative(root, f));
   }

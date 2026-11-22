@@ -52,7 +52,9 @@ export function computePlacements(team: Member[], project: Project | null, now: 
     if (planWaiting && planWaiting.tasks.some((t) => t.owner === m.name))
       return { ...base, room: 'briefing', reason: 'plan-briefing', why: `plan "${planWaiting.title}" awaiting approval` };
     const mine = tasks.filter((t) => t.owner === m.name);
-    const inProg = mine.find((t) => t.status === 'in_progress');
+    // a subagent that completed AFTER the task's last update has finished it (the lead may not have flipped the status yet)
+    const finishedSince = a?.state === 'completed' ? Date.parse(a.since || '') : NaN;
+    const inProg = mine.find((t) => t.status === 'in_progress' && !(finishedSince >= (Date.parse(t.updated || t.started || '') || 0)));
     if (inProg || a?.state === 'working')
       return { ...base, room: WORK_HOME[m.name].room, reason: 'working', why: inProg ? `task ${inProg.id} in progress` : 'live spawn (working)' };
     const review = mine.find((t) => t.status === 'review');
