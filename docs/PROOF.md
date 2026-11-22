@@ -171,3 +171,45 @@ Reconcile notes: `ruzz had no heartbeat for >60 min and no live spawn — marked
 
 **Real hooks, real session:** as soon as `.claude/settings.json` was written, the Claude Code session building this repo started firing it — `.satoru/events/2026-11-22.ndjson` received real `PostToolUse Bash` → `command` events, e.g.
 `{"agent":"rv","type":"command","project":null,"payload":{"command":"sed -i 's#node --test tests/#node --test tests/*.test.mjs#' package.json && …","via":null}}` (unattributed: no project registered, and command never falls back to activeProject).
+
+## Step 9 — Office screen — **PASS**
+
+`node scripts/proof/office.mjs` (Playwright against a sandbox `.satoru` via `ALPHA_OMEGA_ROOT`; state written with the same atomic writer the hook uses; lights driven by real `session_start`/`session_end` event lines):
+```
+before session_start: 🌙 lights off — no live Claude session
+after real session_start event: 💡 lights on — live Claude session
+unique seats: true
+closing bubble for ruzz at desk: "Acceptance criteria are in docs/criteria.md — verified against the plan." | room: command
+facing check on 40 moving samples: 0 wrong; poses seen: side, front, side(mirrored), back; min opacity while walking: 0.72
+ruzz arrived in: pantry | ☕: 1
+kyle directive walk: facing check on 0 moving samples: 0 wrong; poses seen: ; arrived in lounge; bubble: "Collecting sources on torque specs for the brief."
+min distance between any two characters' feet: 147.8 px
+modal shows: maj | writer · cheerful robotic mechanic | Status: working · since 3m ago | Task: Draft the launch copy
+after session_end: 🌙 lights off — no live Claude session
+ticker: LIVE Claude session ended — lights off · just now Claude session started — lights on · just now
+demo label visible: 1
+page errors: none
+```
+Placement table at load:
+```
+│ (index) │ name     │ room        │ seat          │ why                      │
+│ 0       │ 'rv'     │ 'command'   │ 'command_1'   │ 'lead rests at own desk' │
+│ 1       │ 'ruzz'   │ 'command'   │ 'command_2'   │ 'live spawn (working)'   │
+│ 2       │ 'maj'    │ 'workspace' │ 'workspace_1' │ 'live spawn (working)'   │
+│ 3       │ 'kat'    │ 'lounge'    │ 'lounge_5'    │ 'completed — on a break' │
+│ 4       │ 'kyle'   │ 'lounge'    │ 'lounge_4'    │ 'idle — on a break'      │
+│ 5       │ 'renz'   │ 'server'    │ 'server_2'    │ 'live spawn (working)'   │
+│ 6       │ 'richie' │ 'pantry'    │ 'pantry_1'    │ 'idle — on a break'      │
+│ 7       │ 'weng'   │ 'workspace' │ 'workspace_3' │ 'live spawn (working)'   │
+```
+Screenshots: `step9-lights-off.png`, `step9-settled.png`, `step9-closing-line.png` (closing bubble at the desk), `step9-mid-walk.png`, `step9-arrived.png` (☕ in break room), `step9-directive-walk.png` / `step9-directive-arrived.png` (🎬 directive with voice bubble), `step9-modal.png`, `step9-demo.png` (clearly labelled DEMO).
+
+No wall-walking — `tsx --test tests/routes.test.ts` uses the app's real `planRoute()`:
+```
+# checked 2256 routes, 14408 legs, 840884 sample points — all on walkable floor
+ok 1 - no leg between any two seats crosses a wall
+ok 2 - facing: side mirrored when moving right, back when up, front when down
+ok 3 - negative control: a straight line workspace → approval office DOES hit a wall
+```
+Facing: sampled the real on-screen position every 90 ms while walking; every `side` sample was mirrored exactly when moving right (0 wrong of 25+38 samples), `back` only when moving up, `front` when moving down.
+Root-caused flake during this step: an older `/api/state` response could land after a newer one and overwrite it → fixed with per-request sequence numbers (+10 s safety poll); 3/3 consecutive runs green afterwards. Also: `build-assets` no longer deletes the directory a running Vite watches and doesn't rewrite `officeAssets.ts` when unchanged.

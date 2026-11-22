@@ -116,7 +116,9 @@ function nudgeApart(colours) {
 }
 
 // ---------- 2. characters ----------
-fs.rmSync(path.join(OUT, 'characters'), { recursive: true, force: true });
+// Remove only folders of members no longer on the card (keep the directory itself: a running Vite dev server watches it).
+fs.mkdirSync(path.join(OUT, 'characters'), { recursive: true });
+for (const d of fs.readdirSync(path.join(OUT, 'characters'))) if (!card.team.some((m) => m.name === d)) fs.rmSync(path.join(OUT, 'characters', d), { recursive: true, force: true });
 const report = [];
 const SPRITES = {};
 const frontImgs = [];
@@ -262,7 +264,8 @@ for (const d of C.doors) if (!ROOM_NODE[d.room]) ROOM_NODE[d.room] = d.id;
 /** Each member's unique desk seat in their worksIn room (lead = first command seat). */
 export const WORK_HOME: Record<string, { room: string; seat: string; x: number; y: number }> = ${JSON.stringify(WORK_HOME || {}, null, 2)};
 `;
-fs.writeFileSync(path.join(SRC, 'officeAssets.ts'), ts, 'utf8');
+const tsFile = path.join(SRC, 'officeAssets.ts');
+if (!fs.existsSync(tsFile) || fs.readFileSync(tsFile, 'utf8') !== ts) fs.writeFileSync(tsFile, ts, 'utf8'); // unchanged → no needless dev-server reload
 
 console.log(report.join('\n'));
 console.log('\ncolours: ' + card.team.map((m) => `${m.name}=${SPRITES[m.name].colour}`).join('  '));

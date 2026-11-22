@@ -13,10 +13,12 @@ export function useMissionControl() {
   const [rev, setRev] = useState(0);
   const pending = useRef<{ state: boolean; events: boolean; t?: ReturnType<typeof setTimeout> }>({ state: false, events: false });
 
+  const seq = useRef({ state: 0, events: 0 });
   const refresh = useCallback(async (what: { state?: boolean; events?: boolean } = { state: true, events: true }) => {
     const jobs: Promise<unknown>[] = [];
-    if (what.state) jobs.push(api<AppState>('/api/state').then(setState));
-    if (what.events) jobs.push(api<{ events: SatoruEvent[] }>('/api/events/recent?limit=200').then((r) => setEvents(r.events)));
+    // sequence numbers: a slow, older response never overwrites a newer one
+    if (what.state) { const n = ++seq.current.state; jobs.push(api<AppState>('/api/state').then((s) => { if (n === seq.current.state) setState(s); })); }
+    if (what.events) { const n = ++seq.current.events; jobs.push(api<{ events: SatoruEvent[] }>('/api/events/recent?limit=200').then((r) => { if (n === seq.current.events) setEvents(r.events); })); }
     await Promise.all(jobs).catch(() => undefined);
     setRev((r) => r + 1);
   }, []);
@@ -32,11 +34,13 @@ export function useMissionControl() {
       if (c.kind === 'hello') return;
       setLastChange(c);
       const p = pending.current;
-      if (c.kind === 'events') p.events = true; else p.state = true;
+      if (c.kind === 'events') { p.events = true; p.state = true; } else p.state = true; // telemetry (lights) is derived from events
       clearTimeout(p.t);
       p.t = setTimeout(() => { const w = { state: p.state, events: p.events }; p.state = p.events = false; refresh(w); }, 60);
     };
-    return () => es.close();
+    // safety net: if an SSE message is ever lost, state still converges within 10 s
+    const poll = setInterval(() => refresh({ state: true }), 10_000);
+    return () => { es.close(); clearInterval(poll); };
   }, [refresh]);
 
   return { state, events, connected, lastChange, refresh, rev };
